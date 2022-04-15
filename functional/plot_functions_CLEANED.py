@@ -11,7 +11,7 @@ import pylab as mpl
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-from PIL import Image
+#from PIL import Image
 import random
 #from skimage import measure
 
@@ -46,10 +46,11 @@ class IndexTracker(object):
         self.im.axes.figure.canvas.draw()
 
 
-def plot_max(im):
+def plot_max(im, plot=1):
      ma = np.amax(im, axis=0)
-     plt.figure(); plt.imshow(ma)
-
+     if plot:
+         plt.figure(); plt.imshow(ma)
+     return ma
      
      
 """ Plots generic training outputs for Huganir lab data """

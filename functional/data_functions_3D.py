@@ -6,7 +6,7 @@ Created on Sat Jun 15 14:20:44 2019
 """
 
 import numpy as np
-from PIL import Image
+#from PIL import Image
 from os import listdir
 from os.path import isfile, join
 from skimage import measure

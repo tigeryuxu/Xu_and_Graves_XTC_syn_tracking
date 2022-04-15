@@ -9,25 +9,25 @@ Created on Sun Dec 31 16:25:15 2017
 """
 
 import numpy as np
-from PIL import Image
+#from PIL import Image
 from os import listdir
 from os.path import isfile, join
 from skimage import measure
 from natsort import natsort_keygen, ns
 import os
 import pickle
-import scipy.io as sio
+#import scipy.io as sio
 from tifffile import imsave
 
-import zipfile
-import bz2
+#import zipfile
+#import bz2
 
 #from plot_functions_CLEANED import *
 #from data_functions import *
 #from post_process_functions import *
 #from UNet import *
 
-from skan import skeleton_to_csgraph
+#from skan import skeleton_to_csgraph
 from skimage.morphology import skeletonize_3d, skeletonize
 import skimage
 

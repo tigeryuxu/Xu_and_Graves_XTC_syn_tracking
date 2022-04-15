@@ -25,7 +25,23 @@ Installation notes:
 
 """
 """ Install instructions for Nature Methods:
-        1. pip install tensorflow
+        python 3.8.5    
+        pip install tensorflow==2.6.0
+        
+        with CUDA 11.2
+        cuDNN 8.1
+        
+        
+        pip install natsort pysimplegui csbdeep
+        
+        
+    
+        ### to install MATLAB engine, first figure out where matlab is installed by entering "matlabroot" in the MATLAB cmd
+        then:
+            
+            cd /usr/local/MATLAB/R2021a/extern/engines/python
+            python setup.py install
+    
     
 """
 """
@@ -52,6 +68,23 @@ Installation notes:
 """ VirtualEnv
 
         conda activate XTCenv
+        
+        
+        
+        
+        To do:
+            1. Move data to "data" folder
+            2. Set outputs to "Results" folder so ILASTIK can read it
+            3. Figure out how to run watershed... or just don't
+            4. Plot CNN architecture
+            
+        
+        
+        
+        
+        
+        
+        
 """
 
 
@@ -62,7 +95,7 @@ Installation notes:
 import tensorflow as tf
 gpus = tf.config.experimental.list_physical_devices('GPU')
 print(gpus)
-gpu = 1
+gpu = 0
 tf.config.experimental.set_memory_growth(gpus[gpu], True)
 tf.config.experimental.set_visible_devices(gpus[gpu], 'GPU')
 
@@ -75,10 +108,10 @@ from skimage.transform import rescale, resize, downscale_local_mean
 
 
 from functional.plot_functions_CLEANED import *
-from functional.data_functions_CLEANED import *
+#from functional.data_functions_CLEANED import *
 from functional.data_functions_3D import *
 from functional.registration_functions import *
-from functional.GUI import *
+#from functional.GUI import *
 
 from natsort import natsort_keygen, ns
 natsort_key1 = natsort_keygen(key = lambda y: y.lower())      # natural sorting order
@@ -87,7 +120,7 @@ import tifffile as tiff
 
 from csbdeep import data
 from csbdeep import io
-from keras.models import load_model
+#from keras.models import load_model
 from csbdeep.io import load_training_data
 from csbdeep.models import Config, CARE
 
@@ -95,7 +128,10 @@ from csbdeep.models import Config, CARE
 import matlab.engine
 import shutil
 
-
+from skimage import morphology as morph
+from skimage import filters as filt
+    
+import napari
 
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -135,6 +171,24 @@ ILASTIK_detector = os.getcwd() + '/ILASTIK_models/CARE_invivo_trained_SEP_seg_NO
 ILASTIK_tracker = os.getcwd() + '/ILASTIK_models/Tracking_WITH_LEARNING_CARE_trained_SEP_seg.ilp'
     
 
+
+# tmp_name = ''
+# sav_dir_tmp = ''
+# filename = ''
+# frame_id = 1
+# subprocess.run([
+#      ILASTIK_path,
+#     '--headless',
+#     '--export_source=simple segmentation',
+#     '--project=' + ILASTIK_detector,
+#     '--raw_data=' + tmp_name,
+#     '--output_filename_format=' + sav_dir_tmp + filename + '_tmp_for_ILASTIK_' + str(frame_id) + '_ILASTIK_seg'
+# ])
+
+# zzz
+
+
+
 for input_path in list_folder:    
 
     #-------------------------------------------------------------------------------------------------------------------------------
@@ -148,6 +202,9 @@ for input_path in list_folder:
     """
     foldername = input_path.split('/')[-2]
     sav_dir = input_path + '/' + foldername + '_OUTPUT'
+    
+    #sav_dir = '/result/' + foldername + '_OUTPUT'
+    
     
     try:
         # Create target Directory
@@ -181,10 +238,10 @@ for input_path in list_folder:
         moving_im = all_adj_im[i]
             
         ### (A) First do registration overall
-        registered_im, transformix = register_ELASTIX(fixed_im, moving_im, reg_type='affine')  ### can also be "nonrigid"
+        registered_im, transformix = register_ELASTIX_ITK(fixed_im, moving_im, reg_type='affine')  ### can also be "nonrigid"
         
         ### (B) Then do registration slice by slice
-        reg_slices, reapply_slices, transformix_slice = register_by_SLICE(first_frame_fixed, registered_im, reapply_im=[], reg_type='affine')
+        reg_slices, reapply_slices, transformix_slice = register_by_SLICE_ITK(first_frame_fixed, registered_im, reapply_im=[], reg_type='affine')
         reg_slices = np.vstack(reg_slices)
 
 
@@ -196,9 +253,9 @@ for input_path in list_folder:
         print('Registering slice: ' + str(i) + ' of total: ' + str(len(all_adj_im)))
     
     
-    tiff.imwrite(sav_dir + filename + '_REGISTERED_adj.tif', np.asarray(np.expand_dims(all_reg, axis=2), dtype=np.uint8),
-                  imagej=True, resolution=(10.5263157895, 10.5263157895),
-                  metadata={'spacing': 1, 'unit': 'um', 'axes': 'TZCYX'})
+    # tiff.imwrite(sav_dir + filename + '_REGISTERED_adj.tif', np.asarray(np.expand_dims(all_reg, axis=2), dtype=np.uint8),
+    #               imagej=True, resolution=(10.5263157895, 10.5263157895),
+    #               metadata={'spacing': 1, 'unit': 'um', 'axes': 'TZCYX'})
 
 
     #-------------------------------------------------------------------------------------------------------------------------------
@@ -208,7 +265,6 @@ for input_path in list_folder:
     """ (2) Now scale Z-dimension and apply XTC restoration """
     model = CARE(config=None, name='./Checkpoints_TF/4_HUGANIR_LIVE_FULLY_down_COMBINED')
     model.load_weights('weights_best.h5')
-    
 
     ### Scale images to default resolution if user resolution does not matching training
     XY_scale = float(XY_res)/XY_expected
@@ -246,10 +302,28 @@ for input_path in list_folder:
          
         all_CARE[frame_id] = pred_med_snr
         
-    ### must epxand dimensions to save properly!
+        
+    ### must expand dimensions to save properly!
     tiff.imwrite(sav_dir + filename + '_REGISTERED_CARE_processed.tif', np.asarray(np.expand_dims(all_CARE, axis=2), dtype=np.uint8),
                  imagej=True, resolution=(10.5263157895, 10.5263157895),
                  metadata={'spacing': 0.33, 'unit': 'um', 'axes': 'TZCYX'})
+    
+    
+    
+    ### should also save the rescaled, registered input image for later comparisons
+    if XY_scale != 1 or Z_scale != 1:
+        print('Rescaling input image as well for comparisons')
+        all_reg = rescale(all_reg, [1, Z_scale, XY_scale, XY_scale], anti_aliasing=True)   ### rescale the images
+        all_reg = ((all_reg - all_reg.min()) * (1/(all_reg.max() - all_reg.min()) * 255)).astype('uint8')   ### rescale to 255
+        
+    tiff.imwrite(sav_dir + filename + '_REGISTERED_RESCALED_adj.tif', np.asarray(np.expand_dims(all_reg, axis=2), dtype=np.uint8),
+                 imagej=True, resolution=(10.5263157895, 10.5263157895),
+                 metadata={'spacing': 0.33, 'unit': 'um', 'axes': 'TZCYX'})    
+            
+    
+
+    
+
     
 
     #-------------------------------------------------------------------------------------------------------------------------------
@@ -309,21 +383,37 @@ for input_path in list_folder:
     """ (4) Use command line to call matlab, will then find all the ILASTIK detections in temporary folder above.
             Will automatically then run watershed segmentation. Output is a series of float32 TIFFs
     """
+    
+    
     print('Running watershed in MATLAB')
-    eng = matlab.engine.start_matlab()
-    s = eng.genpath('./MATLAB_functions/')
-    eng.addpath(s, nargout=0)
-    eng.main_Huganir_watershed_SEP_func(sav_dir_tmp, nargout=0)
-    eng.quit()
+    # eng = matlab.engine.start_matlab()
+    # s = eng.genpath('./MATLAB_functions/')
+    # eng.addpath(s, nargout=0)
+    # eng.main_Huganir_watershed_SEP_func(sav_dir_tmp, nargout=0)
+    # eng.quit()
 
-    ###  Combine output into a single TIFF stack for subsequent analysis. Also delete temporary folder tmp_ILASTIK
-    images_w = glob.glob(os.path.join(sav_dir_tmp,'*_watershed_seg.tif'))
+    # ###  Combine output into a single TIFF stack for subsequent analysis. Also delete temporary folder tmp_ILASTIK
+    # images_w = glob.glob(os.path.join(sav_dir_tmp,'*_watershed_seg.tif'))
+    
+    
+    
+    images_w = glob.glob(os.path.join(sav_dir_tmp,'*_ILASTIK.tif'))  ### use this to skip watershed step
+    
+    
+    
     images_w.sort(key=natsort_keygen(alg=ns.REAL))  # natural sorting
     
     watershed_stack = []
     for im_name in images_w:
         im = tiff.imread(im_name)
+        
+        
+        from skimage import measure
+        im = measure.label(im)
         watershed_stack.append(im)
+        
+        
+        
         
     watershed_stack = np.asarray(watershed_stack)
     tiff.imwrite(sav_dir + filename + '_REGISTERED_WATERSHED.tif', np.asarray(np.expand_dims(watershed_stack, axis=2), dtype=np.float32),
@@ -342,11 +432,15 @@ for input_path in list_folder:
     """
     images = glob.glob(os.path.join(sav_dir,'*_adj.tif'))
     images.sort(key=natsort_keygen(alg=ns.REAL))  # natural sorting
-    examples = [dict(input=i,CARE=i.replace('_adj.tif','_CARE_processed.tif'), watershed=i.replace('_adj.tif','_WATERSHED.tif')) for i in images]
+    examples = [dict(input=i,CARE=i.replace('_RESCALED_adj.tif','_CARE_processed.tif'), watershed=i.replace('_RESCALED_adj.tif','_WATERSHED.tif')) for i in images]
      
     CARE_name = examples[0]['CARE']      
     RAW_name = examples[0]['input']  
     watershed_name = examples[0]['watershed']  
+
+
+    out_name = CARE_name.split('/')[-1].split('.')[0:-1]
+    out_name = '.'.join(out_name)
     
     """ (7) Perform tracking, using ILASTIK """     
     """ ************CANNOT HAVE ILASTIK BE RUNNING AT THE SAME TIME in GUI form!!! """
@@ -357,21 +451,149 @@ for input_path in list_folder:
         '--raw_data=' + CARE_name,
         '--binary_image=' + watershed_name,
     ])
-    tracking_result = tiff.imread(sav_dir + '/' + filename +  '_Tracking-Result.tiff')
+    all_tracks = tiff.imread(sav_dir + '/' + out_name +  '_Tracking-Result.tiff')
         
     ### must epxand dimensions to save properly!
-    tiff.imwrite(sav_dir +  '/' + filename + '_Tracking-Result.tif', np.asarray(np.expand_dims(tracking_result, axis=2), dtype=np.float32),
+    tiff.imwrite(sav_dir +  '/' + out_name + '_Tracking-Result.tif', np.asarray(np.expand_dims(all_tracks, axis=2), dtype=np.float32),
                  imagej=True, resolution=(10.5263157895, 10.5263157895),
                  metadata={'spacing': 0.33, 'unit': 'um', 'axes': 'TZCYX'})
     
     
     
     ### then delete the temporary file
-    os.remove(sav_dir + '/' + filename +  '_Tracking-Result.tiff')
+    os.remove(sav_dir + '/' + out_name +  '_Tracking-Result.tiff')
     
     
     ### Delete temporary folder tmp_ILASTIK
-    shutil.rmtree(sav_dir_tmp)  
+    shutil.rmtree(sav_dir_tmp)
+    
+    
+
+
+    #-------------------------------------------------------------------------------------------------------------------------------
+    # Vessel masking???
+    #-------------------------------------------------------------------------------------------------------------------------------   
+
+    """ (6) Block-off blood vessel regions
+                COMBINE ACROSS ALL TIMEPOINTS TO GET OVERALL MASK REGION
+     """
+
+    # for RAW_im in all_input_im:
+    print('Start masking out blood vessels ')
+            
+    RAW_vessels = []
+    for id_slic, RAW_slice in enumerate(all_reg):
+        gauss = filt.median(RAW_slice)
+    
+        set_thresh = 10   
+            
+    
+        background = gauss < set_thresh
+        
+        # ### do morph opening per slice
+        opened = np.zeros(np.shape(background), dtype=np.uint8)
+        for slice_id in range(len(background)):
+            open_slice = morph.remove_small_objects(background, min_size=500)
+            open_slice = morph.binary_dilation(open_slice[slice_id], morph.disk(radius = 4))
+            open_slice = morph.binary_erosion(open_slice, morph.disk(radius = 2))
+            open_slice = morph.remove_small_objects(open_slice, min_size=1000)
+            open_slice = morph.remove_small_holes(open_slice, area_threshold=1000)
+            
+                        
+            opened[slice_id] = open_slice
+            #print('opening slice num')
+
+        open_im = morph.binary_dilation(opened, morph.ball(radius = 4))        
+        open_im = opened
+    
+        RAW_vessels.append(np.expand_dims(open_im, 0))
+        
+        print('Blood vessel masking: ' + str(id_slic + 1) + ' of total: ' + str(len(all_reg)))
+        
+        
+    RAW_vessels = np.vstack(RAW_vessels)    
+    
+    RAW_vessels[:, 0:30, :, :] = 0   ### ignore vessels in top of volume as it's unlikely they are obstructing
+    
+    # with napari.gui_qt():
+    #     viewer2 = napari.view_image(RAW_vessels > 0)
+    #     viewer2.add_image(all_reg)
+        
+    mask_track_ids = np.unique(all_tracks[RAW_vessels > 0])
+    print('Masked out synapses due to vessels: ' + str(len(np.unique(all_tracks[RAW_vessels > 0]))))
+    
+    tiff.imwrite(sav_dir +  '/' + out_name + '_blood_vessel_mask.tif', np.asarray(np.expand_dims(RAW_vessels * 255, axis=2), dtype=np.uint8),
+                  imagej=True, resolution=(10.5263157895, 10.5263157895),
+                  metadata={'spacing': 1, 'unit': 'um', 'axes': 'TZCYX'})
+    
+        
+    
+    print('Successfully tracked: ' + str(len(np.unique(all_tracks))) + ' synapses')
+    
+    
+    
+    
+    
+    #-------------------------------------------------------------------------------------------------------------------------------
+    # Sample outputs for ease of viewing
+    #-------------------------------------------------------------------------------------------------------------------------------   
+    
+  
+    fig = plt.figure(1, figsize=(10, 5));
+    cmap='gray'   
+    s_z_l = 15; s_z_p = 25
+    s_xy_l = 400; s_xy_p = 500
+    num_cols = 5
+    for im_num in range(1, num_cols + 1):
+        plt.subplot(3, num_cols, im_num)
+        p1 = plot_max(all_reg[im_num - 1, s_z_l:s_z_p, s_xy_l:s_xy_p, s_xy_l:s_xy_p], plot=0); plt.imshow(p1, cmap=cmap); plt.axis('off')   
+        plt.title('Timepoint ' + str(im_num))
+        
+        plt.subplot(3, num_cols, im_num + num_cols)
+        p1 = plot_max(all_CARE[im_num - 1, s_z_l:s_z_p, s_xy_l:s_xy_p, s_xy_l:s_xy_p], plot=0); plt.imshow(p1, cmap=cmap); plt.axis('off')         
+        
+        plt.subplot(3, num_cols, im_num + (num_cols *2))
+        
+        to_norm = all_tracks[im_num - 1, s_z_l:s_z_p, s_xy_l:s_xy_p, s_xy_l:s_xy_p]
+        to_norm = np.asarray(to_norm, dtype=np.uint8)
+        p1 = plot_max(to_norm, plot=0); plt.imshow(p1, cmap='gist_earth'); plt.axis('off')      
+    
+    fig.suptitle('Quick output for reference \nVolume width XY: ' + str((s_xy_p - s_xy_l) * XY_expected) + ' $\mu$m \nZ depth: ' +  str((s_z_p - s_z_l) * Z_expected) + ' $\mu$m max intensity projection')
+    fig.subplots_adjust(top=0.8) 
+    plt.gcf().text(0.02, 0.70, 'Raw registered', figure=fig, fontsize=11)
+    plt.gcf().text(0.02, 0.45, 'XTC restored', figure=fig, fontsize=11)
+    plt.gcf().text(0.02, 0.20, 'ilastik tracked', figure=fig, fontsize=11)
+    
+    plt.savefig(sav_dir +  '/' + out_name + '_quick_reference_output.png')
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
     
     
 
