@@ -72,7 +72,12 @@ conda remove -n yourenvname -all
 conda activate igneousENV 
 spyder --new-instance
 
-
+    1) Anaconda
+    2) pip install (everything) + 
+    pip install matplotlib scipy scikit-image pillow numpy natsort opencv-python tifffile keras pandas    
+    pip install csbdeep numba
+    
+    
 ### 1. Installing Tensorflow (with GPU compatibility highly recommended.
         python 3.8.5    
         pip install tensorflow==2.6.0
@@ -80,6 +85,17 @@ spyder --new-instance
         with CUDA 11.2
         cuDNN 8.1
 
+
+    mahotas? - failed
+    conda config --add channels conda-forge
+    conda install mahotas
+    
+    pip install skan *** NEW!!! allows skeleton analysis
+    
+    Graphics card driver
+    CUDA Toolkit ==> needs VIsual studio (base package sufficient???)
+    CuDnn SDK ==> 
+    
 ### 2. Installing MATLAB and including path from python
 
         ### to install MATLAB engine, first figure out where matlab is installed by entering "matlabroot" in the MATLAB cmd
