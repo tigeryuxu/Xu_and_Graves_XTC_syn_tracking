@@ -1,68 +1,78 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Nov  6 21:10:54 2019
+#------------------------------------------------------------------------------------------------------------------------
+# Cross-trained CARE (XTC) based synapse tracking pipeline
+#------------------------------------------------------------------------------------------------------------------------     
 
-@author: tiger
-
-
-Installation notes:
-    1) Anaconda
-    2) pip install (everything) + 
-    pip install matplotlib scipy scikit-image pillow numpy natsort opencv-python tifffile keras pandas    
-    pip install csbdeep numba
-
-    mahotas? - failed
-    conda config --add channels conda-forge
-    conda install mahotas
+Main python script for running all modules of the synapse tracking pipeline. 
+The modular layout below means that individual components of the pipeline can
+be easily replaced/improved. Currently, this includes the following sequentially:
+    1. Timeseries registration with ITK-Elastix package. 
+            Volumetric affine registration is first performed, followed by slice-by-slice registration.
+            Alternative non-rigid registration methods are also available.
     
-    pip install skan *** NEW!!! allows skeleton analysis
+    2. XTC image restoration. 
+            Loads trained 3D U-Net model for image enhancement.
+            Requires GPU for optimal speed. If the input volume is acquired at a different
+            voxel resolution, the volume is automatically rescaled (interpolated) to 
+            the resolution of the training data.
     
-    Graphics card driver
-    CUDA Toolkit ==> needs VIsual studio (base package sufficient???)
-    CuDnn SDK ==> 
+    3. ilastik synapse detection model. 
+            Voxel-based classification to identify XTC enhanced synapses
+            across all timepoints in the timeseries.
     
-    Ignore step about putting cudnn with Visual Studio
+    4. ***NON-FUNCTIONAL in Code Capsule environment*** Matlab-based watershed segmentation.
+            Separates adjoining synapses. Currently unavailable
+            due to licensing issues of installing Matlab in Code capsule environment.
+    
+    5. ilastik synapse tracking model.
+            Runs ilastik headless and assigns unique integer to each synapse that is
+            tracked across all timepoints
 
+    6. Blood vessel detection for masking possibly obstructed synapses.
+            Uses thresholding and some morphological operations to generate a binary
+            segmentation of dark space (blood vessels). This masks out synapses that
+            are likely to be obstructed by blood vessels. 
+
+Expected input:
+    /data/"__demo_crop_2.tif"
+                *Single multipage-TIFF file (uint8) used to demo the image restoration and tracking pipeline.
+                Contains a small cropped volume from a longitudinal in vivo imaging experiment
+                visualizing SEP-GluA2 labelled synapses. 
+
+
+Output:
+    /results/"__quick_reference_output.png"
+                * a pyplot PNG figure that contains a quick view of a small subvolume
+                of the demo dataset to show how the data looks before/after restoration
+                and after synapse tracking.
+
+    /results/"___RESCALED_adj.tif"
+                * single multipage-TIFF (uint8) with entire timeseries that has been
+                registered and rescaled to match the resolution of the training data.
+
+    /results/"___XTC_processed.tif"
+                * single multipage-TIFF (uint8) after registeration and processing with XTC.
+    
+    /results/"___Tracking-Result.tif"
+                * single multipage-TIFF (uint32) with segmentation of all synapses.
+                Each tracked synapse has a unique assigned value that is consistent
+                across all timepoints. For optimal visualization, we suggest loading
+                this file into ImageJ/FIJI (https://imagej.net/software/fiji/) and 
+                selecting the "glasbey on dark" LUT followed by adjusting the contrast
+                histogram (Image>>Adjust>>Brightness/Contrast) to see the full spectrum
+                of tracked synapses.
+
+    /results/"__blood_vessel_mask.tiff"
+                * single multipage-TIFF (uint8) with mask of blood vessels that is
+                used in the analysis to remove obstructed synapses after tracking.
+
+
+# 2022 - Yu Kang (Tiger) Xu and Austin Graves
 """
-""" Install instructions for Nature Methods:
-        python 3.8.5    
-        pip install tensorflow==2.6.0
-        
-        with CUDA 11.2
-        cuDNN 8.1
-        
-        
-        pip install natsort pysimplegui csbdeep
-        
-        
-    
-        ### to install MATLAB engine, first figure out where matlab is installed by entering "matlabroot" in the MATLAB cmd
-        then:
-            
-            cd /usr/local/MATLAB/R2021a/extern/engines/python
-            python setup.py install
-    
-    
-"""
-"""
-     SimpleElastix installation:
-               - install in path name WITHOUT SPACES (and not too many characters either!!!)
-               - have visual studio C++ package
-               - ***install target language dependencies first
-                    sudo apt-get install cmake swig monodevelop r-base r-base-dev ruby ruby-dev python python-dev tcl tcl-dev tk tk-dev
-               - run windows 64x native shell as ADMINISTRATOR
-               - follow the GUI instructions to the DOT!!! Even deselecting all other options in the GUI to only keep Python wrappings
-               - remember to go to SUPERBUILD folder within simpleElastix when setting cMake path
-               - at the end, must python install
-                    ==> will need to move file
-                         _SimpleITK.pyd from the ...\Python\ directory to ...\Python\Packaging. 
-                    and then run the installation INSIDE CONDA prompt!!!
-                         or else will not install to anaconda Spyder
-                    
-               
-               
 
-"""
+
+
 
 
 #-------------------------------------------------------------------------------------------------------------------------------
