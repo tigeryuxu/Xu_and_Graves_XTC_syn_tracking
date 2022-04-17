@@ -61,52 +61,54 @@ Output:
 ## Installation instructions:
 This project requires a couple of core dependencies. Currently this has only been tested on a Linux system.
 
-### 0. Create a virtual environment for the project (highly recommended)
+### A. Create a virtual environment for the project (highly recommended)
 
-conda create -n yourenvname python=x.x anaconda
-source activate yourenvname
-conda install -n yourenvname [package]   ### to install packages into environment
-source deactivate
-### to delete:
-conda remove -n yourenvname -all
-conda activate igneousENV 
-spyder --new-instance
+1. First install Anaconda: https://www.anaconda.com/products/distribution
 
-    1) Anaconda
-    2) pip install (everything) + 
-    pip install matplotlib scipy scikit-image pillow numpy natsort opencv-python tifffile keras pandas    
-    pip install csbdeep numba
+2. Then create virtual environment
+
+           conda create -n XTCSynEnv python=3.7 anaconda
+           source activate XTCSynEnv    ### use this command to activate the virtual enviornment
+
+3. Install Python dependencies within virtual environment
+
+           pip install natsort itk-elastix pysimplegui csbdeep matplotlib scipy scikit-image pillow numpy natsort tifffile
     
     
-### 1. Installing Tensorflow (with GPU compatibility highly recommended.
-        python 3.8.5    
+### B. Installing Tensorflow (with GPU compatibility) highly recommended for efficient processing
+        
+1. First install tensorflow, check version needed for specific GPUs (https://www.tensorflow.org/install/gpu). 
         pip install tensorflow==2.6.0
         
-        with CUDA 11.2
-        cuDNN 8.1
+2. Then install dependencies to enable Tensorflow communication with GPU. Follow instructions here: https://www.tensorflow.org/install/gpu. Note: CUDA 11.2 and cuDNN 8.1 work for tensorflow 2.6.0.
 
 
-    mahotas? - failed
-    conda config --add channels conda-forge
-    conda install mahotas
     
-    pip install skan *** NEW!!! allows skeleton analysis
-    
-    Graphics card driver
-    CUDA Toolkit ==> needs VIsual studio (base package sufficient???)
-    CuDnn SDK ==> 
-    
-### 2. Installing MATLAB and including path from python
+### C. Installing MATLAB and including path from python
 
-        ### to install MATLAB engine, first figure out where matlab is installed by entering "matlabroot" in the MATLAB cmd
-        then:
+1. To install MATLAB engine, first figure out where matlab is installed by entering "matlabroot" in the MATLAB cmd, then:
             
             cd /usr/local/MATLAB/R2021a/extern/engines/python
             python setup.py install
             
+            
+            
+### D. Download checkpoint file and demo data
 
-### 3. Installing additional dependencies
+1. Download checkpoint file and demo data here:
+2. Then copy/paste the entire folders into the XTC main directory
 
-        pip install natsort pysimplegui csbdeep
-        
-        
+
+
+## Run demo
+
+1. Run the main function:
+
+           python ./Synapse_detection_and_tracking_FULL_NM.py
+
+2. Follow directions of GUI and select demo folder. Enter in voxel resolution and press continue.
+
+
+
+            
+            
