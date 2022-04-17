@@ -93,9 +93,9 @@ This project requires a couple of core dependencies. Currently this has only bee
             
             
             
-### D. Download checkpoint file and demo data
+### D. Download checkpoint file, demo data, and ILASTIK models
 
-1. Download checkpoint file and demo data here: https://livejohnshopkins-my.sharepoint.com/:f:/g/personal/yxu130_jh_edu/EnSmiQYFidVMlwfUNDvCWgQB3_mv-CeusZ3dkolZw71hwQ?e=xtWTH3
+1. Download checkpoint file, demo data, and ILASTIK models here: https://livejohnshopkins-my.sharepoint.com/:f:/g/personal/yxu130_jh_edu/EnSmiQYFidVMlwfUNDvCWgQB3_mv-CeusZ3dkolZw71hwQ?e=xtWTH3
 2. Then copy/paste the entire folders into the XTC main directory
 
 
