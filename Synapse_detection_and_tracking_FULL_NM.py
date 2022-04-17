@@ -65,29 +65,6 @@ Installation notes:
 """
 
 
-""" VirtualEnv
-
-        conda activate XTCenv
-        
-        
-        
-        
-        To do:
-            1. Move data to "data" folder
-            2. Set outputs to "Results" folder so ILASTIK can read it
-            3. Figure out how to run watershed... or just don't
-            4. Plot CNN architecture
-            
-        
-        
-        
-        
-        
-        
-        
-"""
-
-
 #-------------------------------------------------------------------------------------------------------------------------------
 # Load dependencies and connect to GPU
 #-------------------------------------------------------------------------------------------------------------------------------     
@@ -147,13 +124,13 @@ input_path = os.getcwd() + '/demo/';
 #print("Input must be uint8 ")
 XY_expected = 0.095;                            ### expected default resolution in microns/px
 Z_expected = 1;                                 ### expected default resolution in microns/px
-#list_folder, XY_res, Z_res = XTC_track_GUI(default_XY=str(XY_expected), default_Z=str(Z_expected))    ### opens a GUI and prompts user for the metadata of the file
+list_folder, XY_res, Z_res = XTC_track_GUI(default_XY=str(XY_expected), default_Z=str(Z_expected))    ### opens a GUI and prompts user for the metadata of the file
 
 
 ### for Code Ocean, explicitly state the resolution and input path
-list_folder = [input_path]
-XY_res = XY_expected
-Z_res = 3
+#list_folder = [input_path]
+#XY_res = XY_expected
+#Z_res = 3
 
 
 sys.path.append('/media/user/storage/ilastik-1.3.3post3-Linux/ilastik-meta/ilastik')
