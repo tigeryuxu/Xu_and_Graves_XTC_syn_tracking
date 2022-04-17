@@ -1,4 +1,4 @@
-# Xu_and_Graves_XTC_syn_tracking
+# XTC synapse tracking
 
 ## Overview:
 Main script for running all modules of the synapse tracking pipeline. 
