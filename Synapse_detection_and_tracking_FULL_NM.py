@@ -98,7 +98,7 @@ from functional.plot_functions_CLEANED import *
 #from functional.data_functions_CLEANED import *
 from functional.data_functions_3D import *
 from functional.registration_functions import *
-#from functional.GUI import *
+from functional.GUI import *
 
 from natsort import natsort_keygen, ns
 natsort_key1 = natsort_keygen(key = lambda y: y.lower())      # natural sorting order
@@ -373,14 +373,14 @@ for input_path in list_folder:
     
     
     print('Running watershed in MATLAB')
-    # eng = matlab.engine.start_matlab()
-    # s = eng.genpath('./MATLAB_functions/')
-    # eng.addpath(s, nargout=0)
-    # eng.main_Huganir_watershed_SEP_func(sav_dir_tmp, nargout=0)
-    # eng.quit()
+    eng = matlab.engine.start_matlab()
+    s = eng.genpath('./MATLAB_functions/')
+    eng.addpath(s, nargout=0)
+    eng.main_Huganir_watershed_SEP_func(sav_dir_tmp, nargout=0)
+    eng.quit()
 
-    # ###  Combine output into a single TIFF stack for subsequent analysis. Also delete temporary folder tmp_ILASTIK
-    # images_w = glob.glob(os.path.join(sav_dir_tmp,'*_watershed_seg.tif'))
+    ###  Combine output into a single TIFF stack for subsequent analysis. Also delete temporary folder tmp_ILASTIK
+    images_w = glob.glob(os.path.join(sav_dir_tmp,'*_watershed_seg.tif'))
     
     
     
