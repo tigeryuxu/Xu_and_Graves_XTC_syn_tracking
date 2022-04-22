@@ -133,7 +133,7 @@ input_path = os.getcwd() + '/demo/';
 
 #print("Input must be uint8 ")
 XY_expected = 0.095;                            ### expected default resolution in microns/px
-Z_expected = 1;                                 ### expected default resolution in microns/px
+Z_expected = 0.33;                                 ### expected default resolution in microns/px
 list_folder, XY_res, Z_res = XTC_track_GUI(default_XY=str(XY_expected), default_Z=str(Z_expected))    ### opens a GUI and prompts user for the metadata of the file
 
 
@@ -143,7 +143,7 @@ list_folder, XY_res, Z_res = XTC_track_GUI(default_XY=str(XY_expected), default_
 #Z_res = 3
 
 
-sys.path.append('/media/user/storage/ilastik-1.3.3post3-Linux/ilastik-meta/ilastik')
+#sys.path.append('/media/user/storage/ilastik-1.3.3post3-Linux/ilastik-meta/ilastik')
 import shlex, subprocess
 # ILASTIK_path = '/media/user/storage/ilastik-1.3.3post3-Linux/run_ilastik.sh'
 # ### newly trained without median filter!
@@ -265,16 +265,17 @@ for input_path in list_folder:
     
     
 
-    all_CARE = np.zeros([all_reg.shape[0], int(all_reg.shape[1] * Z_scale), int(all_reg.shape[2] * XY_scale), int(all_reg.shape[3] * XY_scale)])
+    all_XTC = np.zeros([all_reg.shape[0], int(all_reg.shape[1] * Z_scale), int(all_reg.shape[2] * XY_scale), int(all_reg.shape[3] * XY_scale)])
     for frame_id in range(len(all_reg)):
                 
         input_im = all_reg[frame_id]
 
         if XY_scale != 1 or Z_scale != 1:
             print('Rescaling before XTC restoration')
-            input_im = rescale(input_im, [Z_scale, XY_scale, XY_scale], anti_aliasing=True)   ### rescale the images
+            input_im = resize(input_im, [int(all_reg.shape[1] * Z_scale), int(all_reg.shape[2] * XY_scale), int(all_reg.shape[3] * XY_scale)], anti_aliasing=True)   ### rescale the images
             input_im = ((input_im - input_im.min()) * (1/(input_im.max() - input_im.min()) * 255)).astype('uint8')   ### rescale to 255
             print('Successfully rescaled, beginning XTC restoration')
+            
             
         else:
             print('No rescaling required, beginning XTC restoration')
@@ -287,11 +288,11 @@ for input_path in list_folder:
         pred_med_snr[pred_med_snr < 0] = 0   ### set negative values to be 0
         pred_med_snr[pred_med_snr >= 255] = 255             
          
-        all_CARE[frame_id] = pred_med_snr
+        all_XTC[frame_id] = pred_med_snr
         
         
     ### must expand dimensions to save properly!
-    tiff.imwrite(sav_dir + filename + '_REGISTERED_CARE_processed.tif', np.asarray(np.expand_dims(all_CARE, axis=2), dtype=np.uint8),
+    tiff.imwrite(sav_dir + filename + '_REGISTERED_XTC_processed.tif', np.asarray(np.expand_dims(all_XTC, axis=2), dtype=np.uint8),
                  imagej=True, resolution=(10.5263157895, 10.5263157895),
                  metadata={'spacing': 0.33, 'unit': 'um', 'axes': 'TZCYX'})
     
@@ -330,10 +331,10 @@ for input_path in list_folder:
     sav_dir_tmp = sav_dir_tmp + '/'
     
     
-    all_ILASTIK = np.zeros(np.shape(all_CARE))
-    for frame_id in range(len(all_CARE)):
+    all_ILASTIK = np.zeros(np.shape(all_XTC))
+    for frame_id in range(len(all_XTC)):
                 
-        input_im = all_CARE[frame_id]
+        input_im = all_XTC[frame_id]
         tmp_name = sav_dir_tmp + filename + '_tmp_for_ILASTIK_' + str(frame_id) + '.tif'
         
         ### save a temporary file
@@ -383,8 +384,8 @@ for input_path in list_folder:
     images_w = glob.glob(os.path.join(sav_dir_tmp,'*_watershed_seg.tif'))
     
     
-    
-    images_w = glob.glob(os.path.join(sav_dir_tmp,'*_ILASTIK.tif'))  ### use this to skip watershed step
+    ## OPTION TO NOT RUN MATLAB
+    #images_w = glob.glob(os.path.join(sav_dir_tmp,'*_ILASTIK.tif'))  ### use this to skip watershed step
     
     
     
@@ -419,14 +420,14 @@ for input_path in list_folder:
     """
     images = glob.glob(os.path.join(sav_dir,'*_adj.tif'))
     images.sort(key=natsort_keygen(alg=ns.REAL))  # natural sorting
-    examples = [dict(input=i,CARE=i.replace('_RESCALED_adj.tif','_CARE_processed.tif'), watershed=i.replace('_RESCALED_adj.tif','_WATERSHED.tif')) for i in images]
+    examples = [dict(input=i,XTC=i.replace('_RESCALED_adj.tif','_XTC_processed.tif'), watershed=i.replace('_RESCALED_adj.tif','_WATERSHED.tif')) for i in images]
      
-    CARE_name = examples[0]['CARE']      
+    XTC_name = examples[0]['XTC']      
     RAW_name = examples[0]['input']  
     watershed_name = examples[0]['watershed']  
 
 
-    out_name = CARE_name.split('/')[-1].split('.')[0:-1]
+    out_name = XTC_name.split('/')[-1].split('.')[0:-1]
     out_name = '.'.join(out_name)
     
     """ (7) Perform tracking, using ILASTIK """     
@@ -435,7 +436,7 @@ for input_path in list_folder:
          ILASTIK_path,
         '--headless',
         '--project=' + ILASTIK_tracker,
-        '--raw_data=' + CARE_name,
+        '--raw_data=' + XTC_name,
         '--binary_image=' + watershed_name,
     ])
     all_tracks = tiff.imread(sav_dir + '/' + out_name +  '_Tracking-Result.tiff')
@@ -458,7 +459,7 @@ for input_path in list_folder:
 
 
     #-------------------------------------------------------------------------------------------------------------------------------
-    # Vessel masking???
+    # Vessel masking
     #-------------------------------------------------------------------------------------------------------------------------------   
 
     """ (6) Block-off blood vessel regions
@@ -537,7 +538,7 @@ for input_path in list_folder:
         plt.title('Timepoint ' + str(im_num))
         
         plt.subplot(3, num_cols, im_num + num_cols)
-        p1 = plot_max(all_CARE[im_num - 1, s_z_l:s_z_p, s_xy_l:s_xy_p, s_xy_l:s_xy_p], plot=0); plt.imshow(p1, cmap=cmap); plt.axis('off')         
+        p1 = plot_max(all_XTC[im_num - 1, s_z_l:s_z_p, s_xy_l:s_xy_p, s_xy_l:s_xy_p], plot=0); plt.imshow(p1, cmap=cmap); plt.axis('off')         
         
         plt.subplot(3, num_cols, im_num + (num_cols *2))
         

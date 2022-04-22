@@ -81,9 +81,9 @@ This project requires a couple of core dependencies. Currently this has only bee
         pip install tensorflow==2.6.0
         
 2. Then install dependencies to enable Tensorflow communication with GPU. Follow instructions here: https://www.tensorflow.org/install/gpu. Note: CUDA 11.2 and cuDNN 8.1 work for tensorflow 2.6.0.
-
-
+More clear instructions here: https://medium.com/geekculture/install-cuda-and-cudnn-on-windows-linux-52d1501a8805
     
+	
 ### C. Installing MATLAB and including path from python
 
 1. To install MATLAB engine, first figure out where matlab is installed by entering "matlabroot" in the MATLAB cmd, then:
