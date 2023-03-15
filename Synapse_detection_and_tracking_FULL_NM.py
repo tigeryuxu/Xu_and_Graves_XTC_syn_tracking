@@ -153,6 +153,8 @@ import shlex, subprocess
 
 
 ILASTIK_path = os.getcwd() + '/ilastik-1.3.3post3-Linux/run_ilastik.sh'
+if platform == 'windows':
+    ILASTIK_path = 'C:\\Program Files\\ilastik-1.3.3post3\\ilastik.exe' #GCchange
 ### newly trained without median filter!
 ILASTIK_detector = os.getcwd() + '/ILASTIK_models/CARE_invivo_trained_SEP_seg_NO_MEDIAN_FILTER.ilp'
 ILASTIK_tracker = os.getcwd() + '/ILASTIK_models/Tracking_WITH_LEARNING_CARE_trained_SEP_seg.ilp'
@@ -189,6 +191,8 @@ for input_path in list_folder:
     """
     foldername = input_path.split('/')[-2]
     sav_dir = input_path + '/' + foldername + '_OUTPUT'
+    if platform == 'windows':
+        sav_dir = input_path + '\\' + foldername + '_OUTPUT' #GCchange
     
     #sav_dir = '/result/' + foldername + '_OUTPUT'
     
@@ -199,7 +203,10 @@ for input_path in list_folder:
     except FileExistsError:
         print("\nSave directory " , sav_dir ,  " already exists, will overwrite")
         
-    sav_dir = sav_dir + '/'
+    if platform == 'windows':
+        sav_dir = sav_dir + '\\' #GCchange
+    else:
+        sav_dir = sav_dir + '/'
     
     
     print('Loading input timeseries')
@@ -301,7 +308,7 @@ for input_path in list_folder:
     ### should also save the rescaled, registered input image for later comparisons
     if XY_scale != 1 or Z_scale != 1:
         print('Rescaling input image as well for comparisons')
-        all_reg = rescale(all_reg, [1, Z_scale, XY_scale, XY_scale], anti_aliasing=True)   ### rescale the images
+        all_reg = rescale(all_reg, [1, int(Z_scale), XY_scale, XY_scale], anti_aliasing=True)   ### rescale the images GCchange
         all_reg = ((all_reg - all_reg.min()) * (1/(all_reg.max() - all_reg.min()) * 255)).astype('uint8')   ### rescale to 255
         
     tiff.imwrite(sav_dir + filename + '_REGISTERED_RESCALED_adj.tif', np.asarray(np.expand_dims(all_reg, axis=2), dtype=np.uint8),
@@ -427,8 +434,12 @@ for input_path in list_folder:
     watershed_name = examples[0]['watershed']  
 
 
-    out_name = XTC_name.split('/')[-1].split('.')[0:-1]
-    out_name = '.'.join(out_name)
+    out_name = ''
+    if platform == 'windows':
+        out_name = XTC_name.split('\\')[-1].split('.')[0:-1]
+    else:
+        out_name = XTC_name.split('/')[-1].split('.')[0:-1] #GCchange
+    out_name = ''.join(out_name) #GCchange
     
     """ (7) Perform tracking, using ILASTIK """     
     """ ************CANNOT HAVE ILASTIK BE RUNNING AT THE SAME TIME in GUI form!!! """
